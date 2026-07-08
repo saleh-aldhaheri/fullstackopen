@@ -256,3 +256,152 @@ console.log("rendering with counter value", counter);
 | Destructuring                   | `const { a, b } = obj` or straight in params: `({ a, b }) => ...`                     |
 | Lifting state up                | Keep state in the closest common parent, pass down via props                          |
 | Re-render trigger               | Only calling the state setter causes a re-render — mutating a plain variable does not |
+
+---
+
+# Day 3 — Complex state & debugging (end of Part 1)
+
+## Multiple pieces of state
+
+Just call `useState` more than once — one hook per independent piece of state.
+
+```jsx
+const [left, setLeft] = useState(0);
+const [right, setRight] = useState(0);
+```
+
+## Or one object for related state
+
+```jsx
+const [clicks, setClicks] = useState({ left: 0, right: 0 });
+```
+
+**Never mutate state directly** (`clicks.left++` is forbidden, even though it may appear to work). Always set a _new_ object/array. Use spread syntax to copy unchanged fields:
+
+```jsx
+const handleLeftClick = () => setClicks({ ...clicks, left: clicks.left + 1 });
+```
+
+`{ ...clicks, left: clicks.left + 1 }` = copy every field of `clicks`, then override `left`.
+
+**Rule of thumb:** prefer several separate `useState` calls unless the pieces of data are tightly related — a single combined object adds complexity with no real benefit for unrelated values.
+
+## Array state
+
+Same immutability rule applies to arrays — use `concat` (returns a new array), never `push` (mutates in place):
+
+```jsx
+const [allClicks, setAll] = useState([]);
+const handleLeftClick = () => setAll(allClicks.concat("L"));
+```
+
+## State updates are asynchronous
+
+A state variable does **not** update immediately after calling its setter — the old value is still in scope for the rest of that function call.
+
+```jsx
+// ❌ bug: `left` is still the OLD value here
+setLeft(left + 1);
+setTotal(left + right);
+
+// ✅ fix: capture the new value in a local variable first
+const updatedLeft = left + 1;
+setLeft(updatedLeft);
+setTotal(updatedLeft + right);
+```
+
+## Conditional rendering
+
+A component can return entirely different JSX depending on state/props:
+
+```jsx
+const History = ({ allClicks }) => {
+  if (allClicks.length === 0) {
+    return <div>the app is used by pressing the buttons</div>;
+  }
+  return <div>button press history: {allClicks.join(" ")}</div>;
+};
+```
+
+## Rules of Hooks
+
+`useState` (and later `useEffect`) must **only** be called:
+
+- directly inside a component function body
+- **never** inside a loop, a condition (`if`), or a nested helper function
+
+Breaking this rule makes hooks fire in an inconsistent order and breaks the app.
+
+## Event handlers, revisited
+
+| Pattern                       | Works? | Why                                                      |
+| ----------------------------- | ------ | -------------------------------------------------------- |
+| `onClick={handleClick}`       | ✅     | function reference                                       |
+| `onClick={() => setValue(0)}` | ✅     | inline function definition                               |
+| `onClick={setValue(0)}`       | ❌     | function **call** — runs on every render → infinite loop |
+| `onClick="somestring"`        | ❌     | not a function at all, React warns in console            |
+| `onClick={value + 1}`         | ❌     | just a number, not a function                            |
+
+**Function returning a function** (a "handler factory") — advanced but handy for parameterized handlers:
+
+```jsx
+const setToValue = (newValue) => () => {
+  setValue(newValue)
+}
+<button onClick={setToValue(0)}>reset</button>
+<button onClick={setToValue(value + 1)}>increment</button>
+```
+
+This works because `setToValue(0)` is _called during render_, but what it _returns_ is a fresh function — so the event handler itself is still a function reference, not a call.
+
+The simpler, equally valid alternative: keep `setToValue` a normal function and wrap the call at the call site instead: `onClick={() => setToValue(0)}`.
+
+## Passing event handlers to children
+
+```jsx
+const Button = ({ onClick, text }) => <button onClick={onClick}>{text}</button>
+
+<Button onClick={() => setToValue(1000)} text="thousand" />
+```
+
+Match prop names carefully — a typo here fails silently.
+
+## Never define a component inside another component
+
+```jsx
+// ❌ Don't
+const App = () => {
+  const Display = props => <div>{props.value}</div>
+  ...
+}
+
+// ✅ Do — define at the top level, outside App
+const Display = props => <div>{props.value}</div>
+const App = () => { ... }
+```
+
+React treats a component defined inside another as "new" on every render, killing any optimization and causing subtle bugs.
+
+## Debugging toolkit
+
+- `console.log(...)` — separate values with **commas**, not `+` (`+` gives you the useless `[object Object]`).
+- `debugger` statement — pauses execution in Chrome DevTools; inspect variables in the Console/Scope panel, step line by line.
+- Breakpoints in the **Sources** tab — same effect without editing code.
+- **React Developer Tools** browser extension — adds a Components tab to inspect each component's live state and props, including each `useState` hook in the order it was declared.
+
+## Day 3 quick-reference table
+
+| Concept               | Key rule                                                                                              |
+| --------------------- | ----------------------------------------------------------------------------------------------------- |
+| Multiple state pieces | One `useState` per independent value; combine only if tightly related                                 |
+| Updating state        | Never mutate — always produce a new object/array (`{ ...obj }`, `.concat()`)                          |
+| State updates         | Asynchronous — capture the new value in a local variable before using it again in the same handler    |
+| Conditional rendering | `if` inside the component body, return different JSX                                                  |
+| Rules of Hooks        | Call hooks only at the top level of a component function — never in loops/conditions/nested functions |
+| Event handler         | Must be a function reference or definition — never a function call                                    |
+| Nested components     | Never define a component inside another — always top-level                                            |
+| Debugging             | `console.log` with commas, `debugger`, breakpoints, React DevTools                                    |
+
+---
+
+**Part 1 complete** — from `npm create vite@latest` all the way to multi-piece state, immutable updates, and a full debugging toolkit. Part 2 builds on this foundation next.
