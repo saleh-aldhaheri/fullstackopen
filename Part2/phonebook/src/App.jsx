@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Persons from './components/Persons';
 import PersonForm from './components/PersonForm';
 import Filter from './components/Filter';
+import axios from 'axios';
 
 function App() {
   
@@ -11,6 +12,12 @@ function App() {
   const [newNumber, setNewNumber] = useState('');
   const [newFilter, setNewFilter] = useState(); 
   
+  const fetchPersons =  () => { 
+      axios.get('http://localhost:3001/persons')
+            .then(response => setPersons(response.data));
+  }
+  
+  useEffect(fetchPersons, []);
 
 
   return ( 
