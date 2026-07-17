@@ -61,8 +61,7 @@ function App() {
         .then(data =>  setPersons([...persons, data]))
          .then(data => { 
           handleNotification(`Added ${newPerson.name}`, 'sucess');
-        })
-        .catch(error =>  handleNotification(error.message, 'error'));
+        });
     }        
 
     setNewPerson({name: "",  number: ""}); 
@@ -77,7 +76,7 @@ function App() {
   }
 
   const handleNotification = (message, type) => { 
-    
+
     if(type === 'error') { 
       message = `Information of ${message.name} has already being removed from server`;
     } 
