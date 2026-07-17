@@ -1,38 +1,23 @@
-import axios  from 'axios';  
+import axios from 'axios'
+const baseUrl = 'http://localhost:3001/notes'
 
-const baseUrl =  'http://localhost:3001/notes';  
-
-/**
- * @return []  
- */
-function getAll()  {  
-   return axios.get(baseUrl)
-   .then(response => { 
-    const nonExisting = {
-        id: 10000,
-        content: 'This note is not saved to server',
-        important: true,
-    }
-
-    return response.data.concat(nonExisting);
-   });
+const getAll = () => {
+  const request = axios.get(baseUrl)
+  return request.then((response) => response.data)
 }
 
-/**
- *  @return note
- */
-function update(note) {  
-    return axios.put(`${baseUrl}/${note.id}`, note)
-     .then(response => response.data);
+const create = (newObject) => {
+  const request = axios.post(baseUrl, newObject)
+  return request.then((response) => response.data)
 }
 
-/** 
- * @return note
-*/
-function create(note) {  
-  return axios.post(baseUrl, note)
-   .then(response => response.data); 
+const update = (id, newObject) => {
+  const request = axios.put(`${baseUrl}/${id}`, newObject)
+  return request.then((response) => response.data)
 }
 
-
-export default {getAll, update, create};
+export default {
+  getAll,
+  create,
+  update,
+}
