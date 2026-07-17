@@ -1,8 +1,11 @@
-function Person({persons, newFilter}) { 
-   
-    const personsList = newFilter?  persons.filter(p =>  p.name.toLowerCase().includes(newFilter.toLowerCase())) : persons; 
+function Person({person,remove}) { 
 
-    return  personsList.map((p) =><p key={p.id}>{p.name} {p.number}</p>);
+    return (
+        <> 
+            <p key={person.id}>{person.name} {person.number}</p>
+            <button onClick={remove}>Delete</button>
+        </>
+    );
 }
 
 export default Person; 
